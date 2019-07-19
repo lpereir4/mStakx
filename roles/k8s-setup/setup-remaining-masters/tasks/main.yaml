@@ -1,0 +1,9 @@
+---
+- name: Deploy Kubernetes cluster certificates
+  unarchive:
+    src: "{{ certificates_archive_dir }}"
+    dest: /etc/kubernetes
+  become: yes
+
+- name: Join as master
+  command: "{{ hostvars['JCOM']['jcom'] }} --control-plane --ignore-preflight-errors=NumCPU"

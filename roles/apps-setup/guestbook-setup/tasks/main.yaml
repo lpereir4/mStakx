@@ -1,0 +1,32 @@
+---
+
+- name: Clear
+  command: rm -Rf /home/admin/guestbook
+  ignore_errors: yes
+  when:
+    - inventory_hostname == 'master1a'
+
+- name: Create working directory
+  copy:
+    src: guestbook
+    dest: /home/admin
+  when:
+    - inventory_hostname == 'master1a'
+
+- name: Create package
+  command: helm package --destination /root /root/guestbook
+  ignore_errors: yes
+  when:
+    - inventory_hostname == 'master1a'
+
+- name: Purge previous release
+  command: helm del --purge guestbook-release
+  ignore_errors: yes
+  when:
+    - inventory_hostname == 'master1a'
+
+- name: Install guestbook using helm
+  command: helm install --name guestbook-release /root/guestbook --namespace development --set app.namespace=development
+  ignore_errors: yes
+  when:
+    - inventory_hostname == 'master1a'

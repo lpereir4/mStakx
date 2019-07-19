@@ -1,0 +1,43 @@
+Tech instructions :
+1. Install and configure gcloud sdk (https://cloud.google.com/sdk/docs/)
+2. Modify service-account-private-key.json in order to specify a correct service account configuration
+3. Create an ssh key pair in order to access the instances. Put your public key at the repo root directory under the name ssh_key.pub. Modify ssh_config file if needed.
+4. Install pip python-devel python2-libcloud gcc
+5. Run pip install -r requirements.txt from repo root directory
+6. Run cluster-up.sh from repo root directory
+
+Live demo:
+- jenkins : http://35.244.250.219/jenkins/ (admin/mStakx)
+- mediawiki : http://35.244.250.219/
+- guestbook : http://35.244.250.219/guestbook
+- prometheus : http://35.244.250.219/prometheus
+- grafana : http://35.244.250.219/grafana (admin/mStakx)
+- clair : http://35.244.250.219/clair0/v1/namespaces
+
+Level 2 :
+1. Please see ansible roles taged 'k8s' for details about k8s setup.
+2. I used helm to deploy jenkins directly in the k8s cluster, I had to setup a distributed volume cluster (glusterfs) see role jenkins-setup for details.
+3 & 4. See role guestbook-setup
+5. See role helm-setup
+6. A task is available in the jenkins (http://ip/jenkins), login: admin, password: mStakx
+7 & 8. See prometheus-setup role (helm based)
+9. See prometheus-setup role (helm based)
+10. See efk-role (helm based)
+11. In order to proceed to a blue/green deployment we will switch from a blue deployment to a green one by switching the selector of the service. Indeed, in k8s services select the pods they have to manage by filtering them using their labels. By changing the service selector the trafic is no longer dispatched to 'blue' pods.
+A canary release is about progressively replacing blue pods by green pods. This way, malfunctions of the green version are less detriemental and the deployment can be corrected more rapidly.
+12. Please see 'Tech instructions' section.
+
+Level 3 :
+1. Done in previous level.
+2. Done in previous level.
+3. Done in previous level.
+4. Please see mediawiki-setup role.
+5. Please see registry-setup role. I used TLS with for authentication.
+6. I used clair, see clair-setup role for deployment details.
+7. Please see nginx-ingress-controller-setup role.
+8. See jenkins's helm-istio job (or jenkins values file) for istio setup.
+9. TODO
+10. TODO
+11. Please see 'Tech instructions' section.
+12. TODO
+13. TODO

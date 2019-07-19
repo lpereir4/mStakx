@@ -1,0 +1,4 @@
+
+app:
+  namespace: guestbook-helm-release
+  port: 80

@@ -1,0 +1,27 @@
+---
+- name: Copy values file
+  copy:
+      src: values.yaml
+      dest: ~/efk-values.yaml
+  when:
+      - inventory_hostname == 'master1a'
+
+- name: Purge previous release
+  command: helm del --purge efk-release
+  ignore_errors: yes
+  when:
+      - inventory_hostname == 'master1a'
+
+- name: Create monitoring ns
+  command: kubectl create ns monitoring
+  ignore_errors: yes
+  when:
+      - inventory_hostname == 'master1a'
+
+- pause:
+      seconds: 10
+
+- name: Execute helm install
+  command: helm install --namespace=monitoring --name efk-release stable/elastic-stack -f /root/efk-values.yaml
+  when:
+      - inventory_hostname == 'master1a'

@@ -1,0 +1,5 @@
+certificates_dir: /etc/kubernetes/pki
+certificates_archive_dir: /tmp/pki.tgz
+advertise_address: master1a
+cluster_name: mStakx
+control_plane_endpoint: master1a

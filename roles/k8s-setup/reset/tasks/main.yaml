@@ -1,0 +1,29 @@
+---
+- name: Reset
+  command: kubeadm reset -f
+  ignore_errors: yes
+  become: yes
+
+- name: Del 1
+  file:
+    state: absent
+    path: /var/lib/etcd/
+  become: yes
+
+- name: Del 2
+  file:
+    state: absent
+    path: /var/lib/kubelet
+  become: yes
+
+- name: Del 3
+  file:
+    state: directory
+    path: /etc/kubernetes
+  become: yes
+
+- name: Del 4
+  file:
+    state: absent
+    path: /etc/kubernetes/pki
+  become: yes

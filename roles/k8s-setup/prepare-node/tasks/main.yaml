@@ -1,0 +1,123 @@
+--- #TODO: Open all ports
+- name: Install docker private registry certificate
+  include_tasks: install_certs.yaml
+
+- name: Install kubernetes repo
+  copy:
+    src: kubernetes.repo
+    dest: /etc/yum.repos.d/kubernetes.repo
+    owner: root
+    group: root
+    mode: "0644"
+  become: yes
+
+- name: Set SELinux in permissive mode (effectively disabling it) (1/2)
+  selinux:
+    policy: targeted
+    state: permissive
+  become: yes
+
+- name: Set SELinux in permissive mode (effectively disabling it) (2/2)
+  replace:
+    path: /etc/selinux/config
+    regexp: '(\s+)SELINUX=enforcing(\s+.*)?$'
+    replace: '\1SELINUX=permissive\2'
+  become: yes
+
+- name: Install kubelet, kubeadm, kubectl and docker
+  yum:
+    name: "{{ packages }}"
+    update_cache: "yes"
+  vars:
+    packages:
+      - kubelet
+      - kubeadm
+      - kubectl
+      - docker
+      - lvm2
+  become: yes
+
+- name: Wipe fs
+  command: wipefs -a -f /dev/sdb
+  become: true
+  ignore_errors: yes
+
+- name: Remove stale files
+  shell: "rm -rf /var/lib/heketi /etc/glusterfs /var/lib/glusterd /var/log/glusterfs"
+  become: true
+  ignore_errors: yes
+
+- name: "Get volume group information."
+  become: true
+  shell: "pvs /dev/sdb --option vg_name | tail -n+2"
+  register: "volume_groups"
+  ignore_errors: yes
+
+- name: "Remove volume groups."
+  become: true
+  command: "vgremove {{ volume_group }} --yes"
+  with_items: "{{ volume_groups.stdout_lines }}"
+  loop_control: { loop_var: "volume_group" }
+  ignore_errors: yes
+
+- name: Remove any existing topology
+  file:
+    path: /etc/kubernetes/topology.json
+    state: absent
+  become: yes
+
+- name: "Remove physical volume from cluster disks."
+  become: true
+  command: "pvremove /dev/sdb"
+  ignore_errors: yes
+
+- name: "Create PV"
+  become: true
+  command: "pvcreate /dev/sdb"
+  ignore_errors: yes
+
+- name: Ensure docker group exists
+  group:
+    name: docker
+    state: present
+  become: yes
+
+- name: Add admin to group
+  user:
+    name: admin
+    group: docker
+  become: yes
+
+- name: Add root to group
+  user:
+    name: root
+    group: docker
+  become: yes
+
+- name: Enable docker service and restart it
+  service:
+    name: docker
+    enabled: yes
+    state: restarted
+  become: yes
+
+- name: Enable kubelet service and restart it
+  service:
+    name: kubelet
+    enabled: yes
+    state: restarted
+  become: yes
+
+- name: Disable firewalld service and stop it
+  service:
+    name: firewalld
+    enabled: no
+    state: stopped
+  become: yes
+
+- name: Create CNI configuration directory
+  file:
+    path: /etc/cni/net.d
+    state: directory
+    mode: "0777"
+  become: yes

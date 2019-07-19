@@ -1,0 +1,19 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: mediawiki-ingress
+  namespace: mediawiki
+  annotations:
+    ingress.kubernetes.io/ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    ingress.kubernetes.io/rewrite-target: /$1
+    nginx.ingress.kubernetes.io/rewrite-target: /$1
+    nginx.ingress.kubernetes.io/configuration-snippet: rewrite ^(/mediawiki)$ $1/ permanent;
+spec:
+  rules:
+  - http:
+      paths:
+        - path: /?(.*)
+          backend:
+            serviceName: mediawiki-service
+            servicePort: 80

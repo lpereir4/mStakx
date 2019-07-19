@@ -1,0 +1,4 @@
+jmespath
+apache-libcloud
+libcloud_api
+pycrypto

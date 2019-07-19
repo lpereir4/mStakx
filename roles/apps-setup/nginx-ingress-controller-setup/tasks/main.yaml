@@ -1,0 +1,27 @@
+---
+- name: Create working directory
+  file: path=/tmp/nginx state=directory
+  when:
+    - inventory_hostname == 'master1a'
+
+- name: Deploy nginx ingress controller manifests
+  copy:
+    src: "{{ item }}"
+    dest: "/tmp/nginx/{{ item }}"
+  with_items:
+    - 00-namespace.yaml
+    - 01-deployment.yaml
+    - 02-service.yaml
+    - 03-mandatory.yaml
+  when:
+    - inventory_hostname == 'master1a'
+
+- name: Apply nginx ingress controller manifests
+  command: /usr/bin/kubectl apply -f /tmp/nginx
+  when:
+    - inventory_hostname == 'master1a'
+
+- name: Clean working directory
+  file: path=/tmp/nginx state=absent
+  when:
+    - inventory_hostname == 'master1a'

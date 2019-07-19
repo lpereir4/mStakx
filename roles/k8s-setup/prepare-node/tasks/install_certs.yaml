@@ -1,0 +1,67 @@
+---
+- name: Create working directory (temporary)
+  tempfile:
+    state: directory
+    suffix: build
+  register: workbench
+  when: inventory_hostname == 'master1a'
+  delegate_to: localhost
+
+- name: Make workench path accessible from other hosts
+  set_fact: wpath="{{ workbench.path }}"
+  when: inventory_hostname == 'master1a'
+  delegate_to: localhost
+
+- name: Move SSL configuration to working directory
+  copy:
+    src: ssl.conf
+    dest: "{{ workbench.path }}/ssl.conf"
+  when: inventory_hostname == 'master1a'
+  delegate_to: localhost
+
+- name: Generate private key
+  command: openssl genrsa -out {{ workbench.path }}/ca.key 4096
+  when: inventory_hostname == 'master1a'
+  delegate_to: localhost
+
+- name: Generate CSR
+  command: openssl req -batch -new -sha256 -out {{ workbench.path }}/ca.csr -key {{ workbench.path }}/ca.key -config {{ workbench.path }}/ssl.conf
+  when: inventory_hostname == 'master1a'
+  delegate_to: localhost
+
+- name: Generate Certificate
+  command: openssl x509 -req -sha256 -days 3650 -in {{ workbench.path }}/ca.csr -signkey {{ workbench.path }}/ca.key -out {{ workbench.path }}/ca.crt -extensions req_ext -extfile {{ workbench.path }}/ssl.conf
+  when: inventory_hostname == 'master1a'
+  delegate_to: localhost
+
+- name: Del 2
+  file:
+    state: directory
+    path: "/etc/docker/certs.d/docker-registry.svc.cluster.local:5000"
+  become: yes
+
+- name: Deploy certificate
+  copy:
+    src: "{{ hostvars['master1a']['wpath'] }}/ca.crt"
+    dest: "/etc/docker/certs.d/docker-registry.svc.cluster.local:5000/ca.cert"
+  become: yes
+
+- name: Deploy key
+  copy:
+    src: "{{ hostvars['master1a']['wpath'] }}/ca.key"
+    dest: "/etc/docker/certs.d/docker-registry.svc.cluster.local:5000/ca.key"
+  become: yes
+
+- name: Store certificate
+  copy:
+    src: "{{ hostvars['master1a']['wpath'] }}/ca.crt"
+    dest: "{{ playbook_dir }}/ca.crt"
+  when: inventory_hostname == 'master1a'
+  delegate_to: localhost
+
+- name: Store key
+  copy:
+    src: "{{ hostvars['master1a']['wpath'] }}/ca.key"
+    dest: "{{ playbook_dir }}/ca.key"
+  when: inventory_hostname == 'master1a'
+  delegate_to: localhost

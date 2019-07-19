@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: db-service
+  namespace: mediawiki
+  labels:
+    app: db-service
+spec:
+  selector:
+    matchLabels:
+      app: db-service
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: db-service
+    spec:
+      containers:
+        - name: db-service
+          image: mariadb
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              value: password

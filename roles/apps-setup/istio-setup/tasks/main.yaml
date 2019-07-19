@@ -1,0 +1,12 @@
+---
+- name: Install repo
+  command: helm repo add istio.io https://storage.googleapis.com/istio-release/releases/1.2.2/charts/
+
+- name: Install sa
+  command: kubectl apply -f install/kubernetes/helm/helm-service-account.yaml
+
+- name: Install istio-init
+  command: helm install install/kubernetes/helm/istio-init --name istio-init --namespace istio-system
+
+- name: Install istio
+  command: helm install install/kubernetes/helm/istio --name istio --namespace istio-system

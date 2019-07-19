@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: clair-postgres
+  name: clair-postgres
+  namespace: clair
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: clair-postgres
+  template:
+    metadata:
+      namespace: clair
+      labels:
+        app: clair-postgres
+    spec:
+      containers:
+      - image: postgres:latest
+        name: clair-postgres
+        env:
+        - name: POSTGRES_PASSWORD
+          value: password
+        ports:
+        - containerPort: 5432
+          name: postgres-port

@@ -1,0 +1,85 @@
+---
+- name: Helm | Uninstall
+  file:
+    path: ~/.helm
+    state: absent
+    mode: "0777"
+    owner: admin
+  become: yes
+
+- name: Helm | Make sure helm home directory exists
+  file:
+    path: ~/.helm
+    state: directory
+    mode: "0777"
+    owner: admin
+  become: yes
+
+- name: Install helm command
+  include_tasks: install_docker.yaml
+
+- name: Deploy helm manifests
+  copy:
+    src: "{{ item }}"
+    dest: "/etc/kubernetes/{{ item }}"
+    mode: "644"
+  with_items:
+    - 00-tiller-sa.yaml
+    - 01-tiller-clusterrolebinding.yaml
+  when:
+    - inventory_hostname == 'master1a'
+  become: yes
+
+- name: Apply helm manifests
+  command: kubectl --kubeconfig=/home/admin/.kube/config apply -f /etc/kubernetes/{{ item }}
+  with_items:
+    - 00-tiller-sa.yaml
+    - 01-tiller-clusterrolebinding.yaml
+  when:
+    - inventory_hostname == 'master1a'
+  become: yes
+
+- name: Install/upgrade helm
+  command: >
+    /usr/local/bin/helm init
+    --tiller-namespace=kube-system
+    --home /root/.helm
+    --kubeconfig /root/.kube/config
+    --tiller-connection-timeout 2
+    {% if helm_stable_repo_url is defined %} --stable-repo-url {{ helm_stable_repo_url }}{% endif %}
+    {% if inventory_hostname == 'master1a' %}
+    --upgrade --tiller-image=gcr.io/kubernetes-helm/tiller:v2.14.2
+    --service-account=tiller
+    {% if tiller_node_selectors is defined %} --node-selectors {{ tiller_node_selectors }}{% endif %}
+    --override spec.template.spec.priorityClassName=system-cluster-critical
+    {% if tiller_override is defined and tiller_override %} --override {{ tiller_override }}{% endif %}
+    {% if tiller_max_history is defined %} --history-max={{ tiller_max_history }}{% endif %}
+    {% else %}
+    --client-only
+    {% endif %}
+  changed_when: false
+  when:
+    - inventory_hostname == 'master1a'
+  ignore_errors: yes
+
+# FIXME: https://github.com/helm/helm/issues/4063
+- name: Force apply tiller overrides if necessary
+  shell: >
+    /usr/local/bin/helm init
+    --upgrade
+    --tiller-image=gcr.io/kubernetes-helm/tiller:v2.14.2
+    --tiller-namespace=kube-system
+    --home /root/.helm
+    --kubeconfig /root/.kube/config
+    --tiller-connection-timeout 2
+    {% if helm_stable_repo_url is defined %} --stable-repo-url {{ helm_stable_repo_url }}{% endif %}
+    --service-account=tiller
+    {% if tiller_node_selectors is defined %} --node-selectors {{ tiller_node_selectors }}{% endif %}
+    --override spec.template.spec.priorityClassName=system-cluster-critical
+    {% if tiller_override is defined and tiller_override %} --override {{ tiller_override }}{% endif %}
+    {% if tiller_max_history is defined %} --history-max={{ tiller_max_history }}{% endif %}
+    --output yaml
+    | kubectl apply -f -
+  changed_when: false
+  when:
+    - inventory_hostname == 'master1a'

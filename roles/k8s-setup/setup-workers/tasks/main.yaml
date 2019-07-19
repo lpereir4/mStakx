@@ -1,0 +1,3 @@
+---
+- name: Join as worker
+  command: "{{ hostvars['JCOM']['jcom'] }} --ignore-preflight-errors=NumCPU"

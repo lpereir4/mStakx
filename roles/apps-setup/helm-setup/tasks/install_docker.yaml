@@ -1,0 +1,8 @@
+---
+- name: Install helm command
+  template:
+    src: helm-container.sh.j2
+    dest: /usr/local/bin/helm
+    owner: admin
+    mode: 0777
+  become: yes

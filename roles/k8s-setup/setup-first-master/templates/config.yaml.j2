@@ -1,0 +1,54 @@
+apiVersion: kubeadm.k8s.io/v1beta2
+kind: InitConfiguration
+bootstrapTokens:
+- token: "{{ token }}"
+  description: "default kubeadm bootstrap token"
+  ttl: "0"
+localAPIEndpoint:
+  advertiseAddress: "{{ hostvars[advertise_address]['gce_private_ip'] }}"
+  bindPort: 6443
+---
+apiVersion: kubeadm.k8s.io/v1beta2
+kind: ClusterConfiguration
+clusterName: "{{ cluster_name }}"
+controlPlaneEndpoint: "{{ hostvars[control_plane_endpoint]['gce_private_ip']  }}:6443"
+certificatesDir: {{ certificates_dir }}
+etcd:
+  local:
+    serverCertSANs:
+{% for master in masters %}
+      - {{ hostvars[master]['gce_private_ip']}}
+{% endfor %}
+{% for master in masters %}
+      - {{ master }}
+{% endfor %}
+    peerCertSANs:
+{% for master in masters %}
+      - {{ hostvars[master]['gce_private_ip']}}
+{% endfor %}
+{% for master in masters %}
+      - {{ master }}
+{% endfor %}
+apiServer:
+  certSANs:
+    - kubernetes.default
+    - kubernetes.default.svc.cluster.local
+{% for master in masters %}
+    - {{ hostvars[master]['gce_private_ip']}}
+{% endfor %}
+{% for master in masters %}
+    - {{ master }}
+{% endfor %}
+  extraArgs:
+    apiserver-count: "3"
+    service-node-port-range: 80-32767
+    feature-gates: "PersistentLocalVolumes=true,VolumeScheduling=true"
+
+controllerManager:
+  extraArgs:
+    feature-gates: "PersistentLocalVolumes=true,VolumeScheduling=true"
+
+scheduler:
+  extraArgs:
+    feature-gates: "PersistentLocalVolumes=true,VolumeScheduling=true"
+

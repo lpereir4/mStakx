@@ -1,0 +1,9 @@
+---
+- name: "Kubernetes Apps | Lay Down Heketi Storage"
+  become: true
+  vars: { nodes: "{{ groups['tag_heketi-node'] }}" }
+  template: { src: "heketi-storage.json.j2", dest: "{{ kube_config_dir }}/heketi-storage.json" }
+  register: "rendering"
+
+- name: "Kubernetes Apps | Install and configure Heketi Storage"
+  command: "kubectl --kubeconfig=/home/admin/.kube/config apply -f {{ kube_config_dir }}/heketi-storage.json"

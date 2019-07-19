@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mediawiki-pre-service
+  namespace: mediawiki
+  labels:
+    app: mediawiki-service
+    phase: before
+spec:
+  selector:
+    matchLabels:
+      app: mediawiki-service
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: mediawiki-service
+        phase: before
+    spec:
+      containers:
+        - name: mediawiki-pre-service
+          image: mediawiki:1.33

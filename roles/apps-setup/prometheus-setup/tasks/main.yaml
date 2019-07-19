@@ -1,0 +1,39 @@
+---
+- name: Copy values file
+  template:
+      src: values.yaml.j2
+      dest: ~/prometheus-values.yaml
+  when:
+      - inventory_hostname == 'master1a'
+
+- name: Copy values file
+  copy:
+      src: 07-ingress.yaml
+      dest: ~/07-ingress.yaml
+  when:
+      - inventory_hostname == 'master1a'
+
+- name: Purge previous release
+  command: helm del --purge prometheus-release
+  ignore_errors: yes
+  when:
+      - inventory_hostname == 'master1a'
+
+- name: Create monitoring ns
+  command: kubectl create ns monitoring
+  ignore_errors: yes
+  when:
+      - inventory_hostname == 'master1a'
+
+- pause:
+      seconds: 10
+
+- name: Execute helm install
+  command: helm install --namespace=monitoring --name prometheus-release stable/prometheus -f /root/prometheus-values.yaml
+  when:
+      - inventory_hostname == 'master1a'
+
+- name: Create ingress
+  command: kubectl apply -f ~/07-ingress.yaml
+  when:
+      - inventory_hostname == 'master1a'

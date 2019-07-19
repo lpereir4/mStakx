@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: docker-registry
+  name: docker-registry
+spec:
+  selector:
+    matchLabels:
+      app: docker-registry
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: docker-registry
+    spec:
+      containers:
+        - name: docker-registry
+          image: registry:2.7.1
+          env:
+            - name: REGISTRY_HTTP_TLS_CERTIFICATE
+              value: "/ca.crt"
+            - name: REGISTRY_HTTP_TLS_KEY
+              value: "/ca.key"
+          volumeMounts:
+          - mountPath: /ca.key
+            name: drk
+            subPath: ca.key
+          - mountPath: /ca.crt
+            name: drk
+            subPath: ca.crt
+      volumes:
+      - name: drk
+        configMap:
+          name: docker-registry-keys

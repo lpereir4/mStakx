@@ -1,0 +1,52 @@
+{
+    "gridPos": {
+      "h": 8,
+      "w": 12,
+      "x": 0,
+      "y": 0
+    },
+    "id": 4,
+    "links": [],
+    "options": {
+      "fieldOptions": {
+        "calcs": [
+          "last"
+        ],
+        "defaults": {
+          "max": 1,
+          "min": 0
+        },
+        "mappings": [],
+        "override": {},
+        "thresholds": [
+          {
+            "color": "red",
+            "index": 0,
+            "value": null
+          },
+          {
+            "color": "dark-green",
+            "index": 1,
+            "value": 1
+          }
+        ],
+        "values": false
+      },
+      "orientation": "auto",
+      "showThresholdLabels": true,
+      "showThresholdMarkers": true
+    },
+    "pluginVersion": "6.2.5",
+    "targets": [
+      {
+        "expr": "apache_up",
+        "format": "time_series",
+        "intervalFactor": 1,
+        "refId": "A"
+      }
+    ],
+    "timeFrom": null,
+    "timeShift": null,
+    "title": "Is guestbook up ?",
+    "type": "gauge"
+  }

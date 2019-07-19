@@ -1,0 +1,56 @@
+---
+
+- name: Clear working directory
+  file: path=/tmp/clair state=absent
+  when:
+    - inventory_hostname == 'master1a'
+
+- name: Create working directory
+  file: path=/tmp/clair state=directory
+  when:
+    - inventory_hostname == 'master1a'
+
+- name: Deploy docker registry manifests
+  copy:
+    src: "{{ item }}"
+    dest: "/tmp/clair/{{ item }}"
+  with_items:
+    - 00-namespace.yaml
+    - 01-deployment.yaml
+    - 02-service.yaml
+    - 03-db-service.yaml
+    - 04-db-deployment.yaml
+    - 07-ingress.yaml
+  when:
+    - inventory_hostname == 'master1a'
+
+- name: Deploy config
+  copy:
+    src: "{{ item }}"
+    dest: "/tmp/config.yaml"
+  with_items:
+    - 08-config.yaml
+  when:
+    - inventory_hostname == 'master1a'
+
+- name: Create clair config map containing keys
+  command: kubectl -n clair delete configmap config-volume
+  when:
+    - inventory_hostname == 'master1a'
+  ignore_errors: yes
+
+- name: Create clair config map containing keys
+  command: kubectl -n clair create configmap config-volume --from-file=/tmp/config.yaml
+  when:
+    - inventory_hostname == 'master1a'
+  ignore_errors: yes
+
+- name: Apply docker registry manifests
+  command: kubectl apply -f /tmp/clair
+  when:
+    - inventory_hostname == 'master1a'
+
+- name: Clean working directory
+  file: path=/tmp/clair state=absent
+  when:
+    - inventory_hostname == 'master1a'

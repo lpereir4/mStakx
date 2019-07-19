@@ -1,0 +1,4 @@
+---
+kube_config_dir: /etc/kubernetes
+heketi_admin_key: '11elfeinhundertundelf'
+heketi_user_key: '!!einseinseins'

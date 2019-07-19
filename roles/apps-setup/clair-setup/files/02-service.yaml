@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: clair
+  namespace: clair
+  labels:
+    app: clair
+spec:
+  ports:
+  - port: 6060
+    protocol: TCP
+    name: clair-port0
+  - port: 6061
+    protocol: TCP
+    name: clair-port1
+  selector:
+    app: clair

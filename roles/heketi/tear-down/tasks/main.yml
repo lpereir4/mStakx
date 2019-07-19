@@ -1,0 +1,68 @@
+---
+- name: "Remove storage class."
+  command: "kubectl --kubeconfig=/home/admin/.kube/config delete storageclass gluster"
+  ignore_errors: yes
+
+- name: "Tear down heketi."
+  command: "kubectl --kubeconfig=/home/admin/.kube/config delete all,service,jobs,deployment,secret --selector=\"glusterfs=heketi-pod\""
+  ignore_errors: yes
+
+- name: "Tear down heketi."
+  command: "kubectl --kubeconfig=/home/admin/.kube/config delete all,service,jobs,deployment,secret --selector=\"glusterfs=heketi-deployment\""
+  ignore_errors: yes
+
+- name: "Tear down bootstrap."
+  include_tasks: "../provision/tasks/bootstrap/tear-down.yml"
+  ignore_errors: yes
+
+- name: "Ensure there is nothing left over."
+  command: "kubectl --kubeconfig=/home/admin/.kube/config get all,service,jobs,deployment,secret --selector=\"glusterfs=heketi-pod\" -o=json"
+  register: "heketi_result"
+  until: "heketi_result.stdout|from_json|json_query('items[*]')|length == 0"
+  retries: 60
+  delay: 5
+  ignore_errors: yes
+
+- name: "Ensure there is nothing left over."
+  command: "kubectl --kubeconfig=/home/admin/.kube/config get all,service,jobs,deployment,secret --selector=\"glusterfs=heketi-deployment\" -o=json"
+  register: "heketi_result"
+  until: "heketi_result.stdout|from_json|json_query('items[*]')|length == 0"
+  retries: 60
+  delay: 5
+  ignore_errors: yes
+
+- name: "Tear down glusterfs."
+  command: "kubectl --kubeconfig=/home/admin/.kube/config delete daemonset.extensions/glusterfs"
+  ignore_errors: yes
+
+- name: "Remove heketi storage service."
+  command: "kubectl --kubeconfig=/home/admin/.kube/config delete service heketi-storage-endpoints"
+  ignore_errors: yes
+
+- name: "Remove heketi gluster role binding"
+  command: "kubectl --kubeconfig=/home/admin/.kube/config delete clusterrolebinding heketi-gluster-admin"
+  ignore_errors: yes
+
+- name: "Remove heketi config secret"
+  command: "kubectl --kubeconfig=/home/admin/.kube/config delete secret heketi-config-secret"
+  ignore_errors: yes
+
+- name: "Remove heketi db backup"
+  command: "kubectl --kubeconfig=/home/admin/.kube/config delete secret heketi-db-backup"
+  ignore_errors: yes
+
+- name: "Remove heketi service account"
+  command: "kubectl --kubeconfig=/home/admin/.kube/config delete serviceaccount heketi-service-account"
+  ignore_errors: yes
+
+- name: "Get secrets"
+  command: "kubectl --kubeconfig=/home/admin/.kube/config get secrets --output=\"json\""
+  register: "secrets"
+  changed_when: false
+  ignore_errors: yes
+
+- name: "Remove heketi storage secret"
+  vars: { storage_query: "items[?metadata.annotations.\"kubernetes.io/service-account.name\"=='heketi-service-account'].metadata.name|[0]" }
+  command: "kubectl --kubeconfig=/home/admin/.kube/config delete secret {{ secrets.stdout|from_json|json_query(storage_query) }}"
+  when: "storage_query is defined"
+  ignore_errors: yes

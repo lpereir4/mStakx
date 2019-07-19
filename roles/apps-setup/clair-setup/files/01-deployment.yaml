@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: clair
+  namespace: clair
+spec:
+  selector:
+    matchLabels:
+      app: clair
+  replicas: 1
+  template:
+    metadata:
+      namespace: clair
+      labels:
+        app: clair
+    spec:
+      volumes:
+      - name: secret-volume
+        configMap:
+          name: config-volume
+      containers:
+      - name: clair
+        image: quay.io/coreos/clair
+        args:
+          - "-config"
+          - "/config/config.yaml"
+        ports:
+        - containerPort: 6060
+        - containerPort: 6061
+        volumeMounts:
+        - mountPath: /config
+          name: secret-volume

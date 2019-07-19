@@ -1,0 +1,14 @@
+---
+
+# Secure Tiller installation with TLS
+helm_config_dir: /home/admin/helm-config
+helm_script_dir: /home/admin/helm-scripts
+
+# Where private root key will be secured for TLS
+helm_tiller_cert_dir: "{{ helm_config_dir }}/ssl"
+tiller_tls_cert: "{{ helm_tiller_cert_dir }}/tiller.pem"
+tiller_tls_key: "{{ helm_tiller_cert_dir }}/tiller-key.pem"
+tiller_tls_ca_cert: "{{ helm_tiller_cert_dir }}/ca.pem"
+
+ssl_ca_dirs: ['/etc/pki/tls', '/etc/pki/ca-trust']
+certificates_duration: 36500

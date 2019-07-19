@@ -1,0 +1,10 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: mediawiki-service
+  namespace: mediawiki
+spec:
+  selector:
+    app: mediawiki-service
+  ports:
+    - port: 80

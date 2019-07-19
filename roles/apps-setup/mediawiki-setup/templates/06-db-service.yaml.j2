@@ -1,0 +1,10 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: db-service
+  namespace: mediawiki
+spec:
+  selector:
+    app: db-service
+  ports:
+    - port: 3306

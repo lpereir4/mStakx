@@ -1,0 +1,34 @@
+{
+  "clusters": [
+    {
+      "nodes": [
+{% set nodeblocks = [] %}
+{% for node in nodes %}
+{% set nodeblock %}
+        {
+          "node": {
+            "hostnames": {
+              "manage": [
+                "{{ node }}"
+              ],
+              "storage": [
+                "{{ hostvars[node]['ansible_facts']['default_ipv4']['address'] }}"
+              ]
+            },
+            "zone": 1
+          },
+          "devices": [
+            {
+              "name": "/dev/sdb",
+              "destroydata": true
+            }
+          ]
+        }
+{% endset %}
+{% if nodeblocks.append(nodeblock) %}{% endif %}
+{% endfor %}
+{{ nodeblocks|join(',') }}
+      ]
+    }
+  ]
+}

@@ -1,0 +1,70 @@
+---
+- name: create a boot disk
+  gcp_compute_disk:
+    name: "{{ instance_name }}-bootdisk"
+    size_gb: 20
+    source_image: 'projects/centos-cloud/global/images/family/centos-7'
+    zone: "{{ zone }}"
+    project: "{{ gcp_project }}"
+    auth_kind: "{{ gcp_cred_kind }}"
+    service_account_file: "{{ gcp_cred_file }}"
+    scopes:
+      - https://www.googleapis.com/auth/compute
+    state: present
+  register: bootdisk
+
+- name: create a data disk
+  gcp_compute_disk:
+    name: "{{ instance_name }}-datadisk"
+    size_gb: 300
+    zone: "{{ zone }}"
+    project: "{{ gcp_project }}"
+    auth_kind: "{{ gcp_cred_kind }}"
+    service_account_file: "{{ gcp_cred_file }}"
+    scopes:
+      - https://www.googleapis.com/auth/compute
+    state: present
+  register: datadisk
+
+- name: create an instance
+  gcp_compute_instance:
+    state: "present"
+    name: "{{ instance_name }}"
+    tags:
+      items: "{{ instance_tags }}"
+    machine_type: "n1-standard-2"
+    metadata:
+      sshKeys: admin:{{ lookup('file', '../ssh_key.pub'.format(playbook_dir)) }}
+    disks:
+      - auto_delete: true
+        boot: true
+        source: "{{ bootdisk }}"
+      - auto_delete: false
+        source: "{{ datadisk }}"
+    network_interfaces:
+      - network:
+          selfLink : 'global/networks/default'
+        access_configs:
+          - name: "ExternalNAT{{ instance_name }}"
+            type: 'ONE_TO_ONE_NAT'
+    zone: "{{ zone }}"
+    project: "{{ gcp_project }}"
+    auth_kind: "{{ gcp_cred_kind }}"
+    service_account_file: "{{ gcp_cred_file }}"
+    scopes:
+      - https://www.googleapis.com/auth/compute
+  register: instance
+
+- name: Wait for SSH to come up
+  wait_for:
+    host: "{{ instance.networkInterfaces[0].accessConfigs[0].natIP }}"
+    port: 22
+    delay: 10
+    timeout: 60
+  ignore_errors: yes
+
+- name: Add host to groupname
+  add_host:
+    name: "{{ instance.name }}"
+    groupname: "{{ instance_tags }}"
+  ignore_errors: yes

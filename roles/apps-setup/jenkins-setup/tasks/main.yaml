@@ -1,0 +1,39 @@
+---
+- name: Copy values file
+  copy:
+      src: values.yaml
+      dest: ~/jenkins-values.yaml
+  when:
+      - inventory_hostname == 'master1a'
+
+- name: Purge previous release
+  command: helm del --purge jenkins-release
+  ignore_errors: yes
+  when:
+      - inventory_hostname == 'master1a'
+
+- name: Create jenkins ns
+  command: kubectl create ns jenkins
+  ignore_errors: yes
+  when:
+      - inventory_hostname == 'master1a'
+
+- pause:
+      seconds: 10
+
+- name: Execute helm install
+  command: helm install --namespace=jenkins --name jenkins-release stable/jenkins -f /root/jenkins-values.yaml
+  when:
+      - inventory_hostname == 'master1a'
+
+- name: Purge previous release
+  command: kubectl --kubeconfig=/home/admin/.kube/config -n kube-system create sa jenkins
+  ignore_errors: yes
+  when:
+    - inventory_hostname == 'master1a'
+
+- name: Purge previous release
+  command: kubectl --kubeconfig=/home/admin/.kube/config create clusterrolebinding jenkins --clusterrole cluster-admin --serviceaccount=jenkins:default
+  ignore_errors: yes
+  when:
+    - inventory_hostname == 'master1a'

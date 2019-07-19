@@ -1,0 +1,18 @@
+#!/bin/bash
+/usr/bin/docker run --rm \
+  --net=host \
+  --name=helm \
+  --privileged \
+  -v /home/admin:/root:rw \
+  -v /etc/ssl:/etc/ssl:ro \
+  -v /home/admin/helm-config/ssl:/home/admin/helm-config/ssl:rw \
+  {% for dir in ssl_ca_dirs -%}
+  -v {{ dir }}:{{ dir }}:ro \
+  {% endfor -%} 
+  {% if http_proxy is defined or https_proxy is defined -%}
+  -e http_proxy="{{proxy_env.http_proxy}}" \
+  -e https_proxy="{{proxy_env.https_proxy}}" \
+  -e no_proxy="{{proxy_env.no_proxy}}" \
+  {% endif -%}
+  docker.io/lachlanevenson/k8s-helm:v2.14.2 \
+  "$@"

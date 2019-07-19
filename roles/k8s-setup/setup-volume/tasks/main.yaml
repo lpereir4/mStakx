@@ -1,0 +1,14 @@
+---
+- name: Install 1
+  command: kubectl label nodes {{item}} role=local-ssd
+  with_inventory_hostnames:
+    - workers
+  ignore_errors: yes
+
+- name: Install 2
+  copy:
+    src: StorageClass.yaml
+    dest: /tmp/StorageClass.yaml
+
+- name: Install 3
+  command: kubectl apply -f /tmp/StorageClass.yaml

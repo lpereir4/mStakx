@@ -1,0 +1,10 @@
+---
+- name: Retrieve version
+  shell: "kubectl version | base64 | tr -d '\n'"
+  register: version_result
+
+- set_fact:
+    kube_version: "{{ version_result.stdout }}"
+
+- name: Install
+  command: kubectl apply -f https://cloud.weave.works/k8s/net?k8s-version={{ kube_version }}

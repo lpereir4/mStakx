@@ -1,0 +1,193 @@
+---
+- name: Create working directory
+  file: path=/tmp/mediawiki state=directory
+  when:
+    - inventory_hostname == 'master1a'
+
+- name: Deploy mediawiki manifests
+  template:
+    src: "{{ item }}.yaml.j2"
+    dest: "/tmp/mediawiki/{{ item }}.yaml"
+  with_items:
+    - 01-mediawiki-namespace
+    - 03-mediawiki-service
+    - 04-mediawiki-ingress
+    - 06-db-service
+    - 07-mediawiki-configmap
+    - 05-db-deployment
+    - 02-mediawiki-pre-deployment
+  when:
+    - inventory_hostname == 'master1a'
+
+- name: Apply mediawiki manifests
+  command: /usr/bin/kubectl delete -f /tmp/mediawiki
+  when:
+    - inventory_hostname == 'master1a'
+  ignore_errors: yes
+
+- name: Apply mediawiki manifests
+  command: /usr/bin/kubectl apply -f /tmp/mediawiki
+  when:
+    - inventory_hostname == 'master1a'
+
+- pause:
+    seconds: 30
+
+- name: Retrieve cookie
+  uri:
+    url: "http://{{ external_ip }}/mw-config/index.php"
+    method: GET
+    follow_redirects: all
+    status_code: 200
+  register: cook
+  when:
+    - inventory_hostname == 'master1a'
+
+- name: Language selection page
+  uri:
+    url: "http://{{ external_ip }}/mw-config/index.php?page=Language"
+    method: POST
+    follow_redirects: all
+    body_format: form-urlencoded
+    headers:
+      Cookie: "{{ cook.cookies_string }}"
+    body:
+      - [uselang, en-gb]
+      - [ContLang, en-gb]
+      - [submit-continue, "Continue →"]
+    status_code: 200
+  register: language
+  when:
+    - inventory_hostname == 'master1a'
+
+- name: Welcome page
+  uri:
+    url: "http://{{ external_ip }}/mw-config/index.php?page=Welcome"
+    method: POST
+    follow_redirects: all
+    body_format: form-urlencoded
+    headers:
+      Cookie: "{{ cook.cookies_string }}"
+    body:
+      - [submit-continue, "Continue →"]
+    status_code: 200
+  register: welcome
+  when:
+    - inventory_hostname == 'master1a'
+
+- name: DBConnect page
+  uri:
+    url: "http://{{ external_ip }}/mw-config/index.php?DBConnect"
+    method: POST
+    follow_redirects: all
+    body_format: form-urlencoded
+    headers:
+      Cookie: "{{ cook.cookies_string }}"
+    body:
+      - [submit-continue, "Continue →"]
+      - [DBType, "mysql"]
+      - [mysql_wgDBserver, "db-service"]
+      - [mysql_wgDBname, "mw"]
+      - [mysql_wgDBprefix, "mw_"]
+      - [mysql__InstallUser, "root"]
+      - [mysql__InstallPassword, "password"]
+      - [sqlite_wgSQLiteDataDir, "/var/www/data"]
+      - [sqlite_wgDBname, "mw"]
+    status_code: 200
+  register: dbconnect
+  when:
+    - inventory_hostname == 'master1a'
+
+- name: DBSettings page
+  uri:
+    url: "http://{{ external_ip }}/mw-config/index.php?page=DBSettings"
+    method: POST
+    follow_redirects: all
+    body_format: form-urlencoded
+    headers:
+      Cookie: "{{ cook.cookies_string }}"
+    body:
+      - [submit-continue, "Continue →"]
+      - [mysql__SameAccount, 1]
+      - [mysql_wgDBuser, wikiuser]
+      - [mysql_wgDBpassword, ""]
+      - [mysql__MysqlEngine, InnoDB]
+    status_code: 200
+  register: dbsettings
+  when:
+    - inventory_hostname == 'master1a'
+
+- name: Name page
+  uri:
+    url: "http://{{ external_ip }}/mw-config/index.php?page=Name"
+    method: POST
+    follow_redirects: all
+    body_format: form-urlencoded
+    return_content: yes
+    headers:
+      Cookie: "{{ cook.cookies_string }}"
+    body:
+      - [submit-continue, "Continue →"]
+      - [config_wgSitename, mStakx]
+      - [config__NamespaceType, site-name]
+      - [config_wgMetaNamespace, MyWiki]
+      - [config__AdminName, mStakx]
+      - [config__AdminPassword, mStakxmStakx]
+      - [config__AdminPasswordConfirm, mStakxmStakx]
+      - [config__AdminEmail, ""]
+      - [config__SkipOptional, skip]
+    status_code: 200
+  register: mwname
+  when:
+    - inventory_hostname == 'master1a'
+
+- name: Install page
+  uri:
+    url: "http://{{ external_ip }}/mw-config/index.php?page=Install"
+    method: POST
+    follow_redirects: none
+    body_format: form-urlencoded
+    headers:
+      Cookie: "{{ cook.cookies_string }}"
+    body:
+      - [submit-continue, "Continue →"]
+    status_code: 200
+  register: install
+  when:
+    - inventory_hostname == 'master1a'
+  ignore_errors: yes
+
+- name: Install page 2
+  uri:
+    url: "http://{{ external_ip }}/mw-config/index.php?page=Install"
+    method: GET
+    follow_redirects: all
+    headers:
+      Cookie: "{{ cook.cookies_string }}"
+    status_code: 200
+  when:
+    - inventory_hostname == 'master1a'
+
+- name: Deploy post install manifests
+  template:
+    src: "{{ item }}.yaml.j2"
+    dest: "/tmp/mediawiki/{{ item }}.yaml"
+  with_items:
+    - 02-mediawiki-post-deployment
+  when:
+    - inventory_hostname == 'master1a'
+
+- name: Apply post install manifests
+  command: /usr/bin/kubectl apply -f /tmp/mediawiki/02-mediawiki-post-deployment.yaml
+  when:
+    - inventory_hostname == 'master1a'
+
+- name: Remove pre install manifests
+  command: /usr/bin/kubectl delete -f /tmp/mediawiki/02-mediawiki-pre-deployment.yaml
+  when:
+    - inventory_hostname == 'master1a'
+
+- name: Clean working directory
+  file: path=/tmp/mediawiki state=absent
+  when:
+    - inventory_hostname == 'master1a'
