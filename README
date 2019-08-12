@@ -4,7 +4,8 @@ Tech instructions :
 3. Create an ssh key pair in order to access the instances. Put your public key at the repo root directory under the name ssh_key.pub. Modify ssh_config file if needed.
 4. Install pip python-devel python2-libcloud gcc
 5. Run pip install -r requirements.txt from repo root directory
-6. Run cluster-up.sh from repo root directory
+6. Allow unrestricted communication beetween virtual machine using VPC firewall rules (should be restricted in a real world project).
+7. Run cluster-up.sh from repo root directory
 
 Live demo:
 - jenkins : http://35.244.250.219/jenkins/ (admin/mStakx)
